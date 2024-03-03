@@ -14,16 +14,16 @@ import models.Message;
 import utils.DBUtil;
 
 /**
- * Servlet implementation class CreateServlet
+ * Servlet implementation class UpdateServlet
  */
-@WebServlet("/create")
-public class CreateServlet extends HttpServlet {
+@WebServlet("/update")
+public class UpdateServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
     /**
      * @see HttpServlet#HttpServlet()
      */
-    public CreateServlet() {
+    public UpdateServlet() {
         super();
     }
 
@@ -35,9 +35,8 @@ public class CreateServlet extends HttpServlet {
         String _token = request.getParameter("_token");
         if (_token != null && _token.equals(request.getSession().getId())) {
             EntityManager em = DBUtil.createEntityManager();
-            em.getTransaction().begin();
 
-            Message m = new Message();
+            Message m = em.find(Message.class, (Integer) (request.getSession().getAttribute("message_id")));
 
             String title = request.getParameter("title");
             m.setTitle(title);
@@ -46,12 +45,15 @@ public class CreateServlet extends HttpServlet {
             m.setContent(content);
 
             Timestamp currentTime = new Timestamp(System.currentTimeMillis());
-            m.setCreated_at(currentTime);
             m.setUpdated_at(currentTime);
 
-            em.persist(m);
+            // 取得したデータに変更をかけてcommitすれば更新されるので、em.persist(m)は不要
+            em.getTransaction().begin();
             em.getTransaction().commit();
             em.close();
+
+            // セッションスコープ上の不要になったデータを削除
+            request.getSession().removeAttribute("message_id");
 
             response.sendRedirect(request.getContextPath() + "/index");
         }
